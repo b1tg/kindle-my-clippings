@@ -1,11 +1,14 @@
+use rand::{thread_rng, Rng};
 use regex::Regex;
+use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::Read;
+use std::io::Write;
 #[cfg(test)]
 mod tests {
     use crate::*;
-    #[ignore]
+    // #[ignore]
     #[test]
     fn it_works() {
         let file_path = env::current_dir().unwrap().join("My Clippings.txt");
@@ -29,6 +32,7 @@ mod tests {
         dbg!(&desc);
     }
 
+    #[ignore]
     #[test]
     fn test_parse_date() {
         let case1 = "2019年8月31日星期六 上午12:55:51";
@@ -126,7 +130,7 @@ pub fn parse_desc(input: &str) -> Result<Desc, ()> {
     }
     let cap = re.captures(input).unwrap();
     if cap.len() != 5 || false {}
-    dbg!(&cap);
+    // dbg!(&cap);
     if cap.len() == 5 {
         desc.pos_start = cap.get(1).unwrap().as_str().parse::<u32>().unwrap();
         desc.pos_end = match cap.get(3) {
@@ -140,6 +144,7 @@ pub fn parse_desc(input: &str) -> Result<Desc, ()> {
 }
 const SEP: &str = "==========\r\n";
 const NEWLINE: &str = "\r\n";
+const OPTION_META_DATA: bool = false;
 
 #[derive(Debug, Default, Clone)]
 pub struct Desc {
@@ -157,22 +162,57 @@ pub struct Note {
 fn parse_input(input: &str) {
     let parts: Vec<_> = input.split(SEP).collect();
     dbg!(parts.len());
-    // let parts = &parts[0..3];
+    // let parts = &parts[0..300];
 
     // dbg!(&parts);
+    let mut notes_map: HashMap<String, Vec<Note>> = HashMap::new();
     let mut notes: Vec<Note> = vec![];
     for (i, part) in parts.iter().enumerate() {
         let lines: Vec<_> = part.split(NEWLINE).collect();
         // dbg!(i,&lines);
         if lines.len() != 5 || lines[2] != "" || lines[4] != "" {
             dbg!(i, &lines);
-            panic!(123);
+            // panic!(123);
+            break;
         } else {
             let mut note = Note::default();
             note.book = lines[0].to_string();
             note.desc = parse_desc(lines[1]).unwrap();
             note.content = lines[3].to_string();
-            dbg!(&note);
+            // dbg!(&note);
+            let map_entry = notes_map.entry(note.book.clone()).or_insert(vec![]);
+            map_entry.push(note);
         }
     }
+    let key_len = notes_map.keys().len();
+    for (k, v) in notes_map {
+        // println!("{}: \n=> {:?}, {:?}", k, v.len(), v[0]);
+        // println!("{}: \n=> {:?}", k, v.len());
+        // println!("=============");
+        //
+        if k.contains("Digital Minimalism") {
+            let mut rng = thread_rng();
+            let today_clip = &v[rng.gen_range(0..v.len())];
+            println!("=====================");
+            println!("Today's Clipping:\n\n  {}", today_clip.content);
+            println!("=====================");
+
+            let mut file = File::create(format!("{}.org", k)).unwrap();
+            write!(file, "* Highlights in \"{}\"\n", k);
+            for line in v {
+                write!(file, "** {}\n", line.content);
+
+                // Optional: write metadata
+                if OPTION_META_DATA {
+                    write!(file, "\t:PROPERTIES:\n");
+                    write!(file, "\t:POS_START: {}\n", line.desc.pos_start);
+                    if line.desc.pos_end.is_some() {
+                        write!(file, "\t:POS_END: {}\n", line.desc.pos_end.unwrap());
+                    }
+                    write!(file, "\t:END:\n");
+                }
+            }
+        }
+    }
+    println!("TOTAL: {} books", key_len);
 }
