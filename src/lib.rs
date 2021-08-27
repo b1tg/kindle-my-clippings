@@ -8,7 +8,36 @@ use std::io::Write;
 #[cfg(test)]
 mod tests {
     use crate::*;
+
     // #[ignore]
+    #[test]
+    fn en_works() {
+        let input = r#"12 Rules for Life: An Antidote to Chaos (Peterson, Jordan B.)
+- Your Highlight on page xiii | Location 149-152 | Added on Saturday, May 12, 2018 11:36:38 AM
+
+Not long after the Soviet Union fell, and most of the world breathed a sigh of relief, Peterson began purchasing this propaganda for a song online. Paintings lionizing the Soviet revolutionary spirit completely filled every single wall, the ceilings, even the bathrooms. The paintings were not there because Jordan had any totalitarian sympathies, but because he wanted to remind himself of something he knew he and everyone would rather forget: that over a hundred million people were murdered in the name of utopia.
+==========
+12 Rules for Life: An Antidote to Chaos (Peterson, Jordan B.)
+- Your Highlight on page xv | Location 181-184 | Added on Saturday, May 12, 2018 11:41:53 AM
+
+Ideologies are simple ideas, disguised as science or philosophy, that purport to explain the complexity of the world and offer remedies that will perfect it. Ideologues are people who pretend they know how to “make the world a better place” before they’ve taken care of their own chaos within.
+==========
+12 Rules for Life: An Antidote to Chaos (Peterson, Jordan B.)
+- Your Highlight on page xv | Location 186-187 | Added on Saturday, May 12, 2018 11:42:20 AM
+
+Ideologies are substitutes for true knowledge, and ideologues are always dangerous when they come to power, because a simple-minded I-know-it-all approach is no match for the complexity of existence.
+==========
+"#;
+
+        let file_path = env::current_dir().unwrap().join("my-clippings-en.txt");
+        let mut db_file = File::open(file_path).unwrap();
+        // let mut input: String = "".to_string();
+        // db_file.read_to_string(&mut input).unwrap();
+
+        parse_input(&input);
+    }
+
+    #[ignore]
     #[test]
     fn it_works() {
         let file_path = env::current_dir().unwrap().join("My Clippings.txt");
@@ -26,13 +55,24 @@ mod tests {
         let case2 = "- 您在第 47 页（位置 #708-710）的标注 | 添加于 2021年3月5日星期五 上午1:26:56";
         let case3 = "- 您在位置 #205 的笔记 | 添加于 2019年8月31日星期六 上午12:55:51";
 
-        let desc = parse_desc(case1);
+        let en_case1 =
+            "- Your Highlight on page 421-421 | Added on Thursday, April 13, 2017 11:51:59 AM";
+        let en_case2 = "- Your Highlight on page xv | Location 181-184 | Added on Saturday, May 12, 2018 11:41:53 AM";
+        let en_case3 = "- Your Highlight on page 121 | Location 1607-1608 | Added on Wednesday, August 31, 2016 9:39:11 AM";
+        let en_case4 =
+            "- Your Highlight on Location 294-296 | Added on Friday, February 21, 2020 9:06:35 AM";
+
+        let desc = parse_desc(en_case1);
         dbg!(&desc);
-        let desc = parse_desc(case3);
+        let desc = parse_desc(en_case2);
+        dbg!(&desc);
+        let desc = parse_desc(en_case3);
+        dbg!(&desc);
+        let desc = parse_desc(en_case4);
         dbg!(&desc);
     }
 
-    #[ignore]
+    // #[ignore]
     #[test]
     fn test_parse_date() {
         let case1 = "2019年8月31日星期六 上午12:55:51";
@@ -123,17 +163,30 @@ pub fn parse_date(input: &str) -> Result<Datetime, ()> {
 }
 
 pub fn parse_desc(input: &str) -> Result<Desc, ()> {
-    let re = Regex::new(r"#(\d*)(-(\d*))?.*(20\d\d年.*)$").unwrap();
+    // let re = Regex::new(r"#(\d*)(-(\d*))?.*(20\d\d年.*)$").unwrap();
+    // let re = Regex::new(r"Location (\d*)-(\d*) \| Added on (\w*), (\w*) (\d*), (\d*) (\d{2}):(\d{2}):(\d{2}) (AM|PM)").unwrap();
+    let re = Regex::new(r"Your Highlight on (page ((\d*)(-(\d*))?|\w*) \| )?(Location (\d*)-(\d*) \| )?Added on (\w*), (\w*) (\d*), (\d*) (\d{1,2}):(\d{2}):(\d{2}) (AM|PM)").unwrap();
     let mut desc = Desc::default();
     if re.captures(input).is_none() {
         panic!(input.to_string());
     }
     let cap = re.captures(input).unwrap();
-    if cap.len() != 5 || false {}
     // dbg!(&cap);
-    if cap.len() == 5 {
-        desc.pos_start = cap.get(1).unwrap().as_str().parse::<u32>().unwrap();
-        desc.pos_end = match cap.get(3) {
+    if cap.len() == 17 {
+        // desc.page_start = cap.get(3).unwrap().as_str().parse::<u32>().unwrap();
+        desc.page_start = match cap.get(3) {
+            Some(i) => i.as_str().parse::<u32>().ok(),
+            None => None,
+        };
+        desc.page_end = match cap.get(5) {
+            Some(i) => i.as_str().parse::<u32>().ok(),
+            None => None,
+        };
+        desc.loc_start = match cap.get(7) {
+            Some(i) => i.as_str().parse::<u32>().ok(),
+            None => None,
+        };
+        desc.loc_end = match cap.get(8) {
             Some(i) => i.as_str().parse::<u32>().ok(),
             None => None,
         };
@@ -142,14 +195,20 @@ pub fn parse_desc(input: &str) -> Result<Desc, ()> {
     }
     Ok(desc)
 }
-const SEP: &str = "==========\r\n";
-const NEWLINE: &str = "\r\n";
+// const SEP: &str = "==========\r\n";
+// const NEWLINE: &str = "\r\n";
+const SEP: &str = "==========\n";
+const NEWLINE: &str = "\n";
 const OPTION_META_DATA: bool = false;
 
 #[derive(Debug, Default, Clone)]
 pub struct Desc {
     pos_start: u32,
     pos_end: Option<u32>,
+    page_start: Option<u32>,
+    page_end: Option<u32>,
+    loc_start: Option<u32>,
+    loc_end: Option<u32>,
     // timestamp: String
 }
 #[derive(Debug, Default, Clone)]
@@ -171,7 +230,8 @@ fn parse_input(input: &str) {
         let lines: Vec<_> = part.split(NEWLINE).collect();
         // dbg!(i,&lines);
         if lines.len() != 5 || lines[2] != "" || lines[4] != "" {
-            dbg!(i, &lines);
+            println!("Error Note: {}, {}, {:?}", i, lines.len(), &lines);
+
             // panic!(123);
             break;
         } else {
