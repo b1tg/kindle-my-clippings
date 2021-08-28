@@ -9,7 +9,7 @@ use std::io::Write;
 mod tests {
     use crate::*;
 
-    // #[ignore]
+    #[ignore]
     #[test]
     fn en_works() {
         let input = r#"12 Rules for Life: An Antidote to Chaos (Peterson, Jordan B.)
@@ -48,7 +48,7 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
         parse_input(&input);
     }
 
-    #[ignore]
+    // #[ignore]
     #[test]
     fn test_parse_desc() {
         let case1 = "- 您在位置 #2484-2487的标注 | 添加于 2021年4月7日星期三 下午10:55:58";
@@ -64,15 +64,15 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
 
         let desc = parse_desc(en_case1);
         dbg!(&desc);
-        let desc = parse_desc(en_case2);
-        dbg!(&desc);
-        let desc = parse_desc(en_case3);
-        dbg!(&desc);
-        let desc = parse_desc(en_case4);
-        dbg!(&desc);
+        // let desc = parse_desc(en_case2);
+        // dbg!(&desc);
+        // let desc = parse_desc(en_case3);
+        // dbg!(&desc);
+        // let desc = parse_desc(en_case4);
+        // dbg!(&desc);
     }
 
-    // #[ignore]
+    #[ignore]
     #[test]
     fn test_parse_date() {
         let case1 = "2019年8月31日星期六 上午12:55:51";
@@ -92,44 +92,87 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
         Weekday::from_str("x");
     }
 }
+macro_rules! def_enum {
+    ($name:ident,$default:ident, $($child:ident),*) => {
 
-#[derive(Debug, Clone)]
-pub enum Weekday {
-    Mon,
-    Tue,
-    Wed,
-    Thu,
-    Fri,
-    Sat,
-    Sun,
-}
+            #[derive(Debug, Clone)]
+            pub enum $name {
+                $(
+                 $child,
+                )*
+            }
 
-impl Weekday {
-    pub fn from_str(wd: &str) -> Option<Self> {
-        let weekday = match wd {
-            "一" => Weekday::Mon,
-            "二" => Weekday::Tue,
-            "三" => Weekday::Wed,
-            "四" => Weekday::Thu,
-            "五" => Weekday::Fri,
-            "六" => Weekday::Sat,
-            "日" => Weekday::Sun,
-            _ => return None,
-        };
-        Some(weekday)
+            impl Default for $name {
+                fn default() -> Self {
+                    $name::$default
+                }
+            }
+            impl $name {
+                pub fn from_str(input: &str) -> Self {
+                    match input {
+                        $(
+                        stringify!($child) => $name::$child,
+                        )*
+                        _ => unimplemented!(),
+                    }
+                }
+            }
     }
 }
 
+macro_rules! def_enum1 {
+    ($name:ident,$default:ident, $($prop: expr, $prop1: expr => $val: ident,)+) => {
+
+            #[derive(Debug, Clone)]
+            pub enum $name {
+                $($val),+
+            }
+
+            impl Default for $name {
+                fn default() -> Self {
+                    $name::$default
+                }
+            }
+            impl $name {
+                pub fn from_str(input: &str) -> Self {
+                    match input {
+
+                        $($prop | $prop1 => $name::$val,)+
+
+                        _ => unimplemented!(),
+                    }
+                }
+            }
+    }
+}
+
+def_enum!(AMorPM, AM, AM, PM);
+
+// bad bad...
+def_enum1!(Weekday, Mon,
+  "一", "Monday" => Mon,
+  "二", "Tuesday" => Tue,
+  "三", "Wednesday" => Wed,
+  "四", "Thursday" => Thu,
+  "五", "Friday" => Fri,
+  "六", "Saturday" => Sat,
+  "日", "Sunday" => Sun,
+);
+def_enum!(
+    Month, January, January, February, March, April, May, June, July, August, September, October,
+    November, December
+);
+
 #[derive(Debug, Clone, Default)]
 pub struct Datetime {
-    year: u16,
-    month: u8,
-    day: u8,
-    weekday: String,
-    am_or_pm: String,
-    hour: u8,
-    minute: u8,
-    second: u8,
+    year: u32,
+    month: u32,
+    day: u32,
+    weekday: Weekday,
+    am_or_pm: AMorPM,
+    hour: u32,
+    minute: u32,
+    second: u32,
 }
 
 pub fn parse_date(input: &str) -> Result<Datetime, ()> {
@@ -152,8 +195,8 @@ pub fn parse_date(input: &str) -> Result<Datetime, ()> {
         datetime.year = internal_parse(1) as _;
         datetime.month = internal_parse(2) as _;
         datetime.day = internal_parse(3) as _;
-        datetime.weekday = internal_parse_str(4) as _;
-        datetime.am_or_pm = internal_parse_str(5) as _;
+        // datetime.weekday = internal_parse_str(4) as _;
+        // datetime.am_or_pm = internal_parse_str(5) as _;
         datetime.hour = internal_parse(6) as _;
         datetime.minute = internal_parse(7) as _;
         datetime.second = internal_parse(8) as _;
@@ -161,6 +204,12 @@ pub fn parse_date(input: &str) -> Result<Datetime, ()> {
     }
     return Err(());
 }
+
+// macro_rules! ppp {
+//     ($i:ident, $x:expr) => {
+//         $i = $x;
+//     }
+// }
 
 pub fn parse_desc(input: &str) -> Result<Desc, ()> {
     // let re = Regex::new(r"#(\d*)(-(\d*))?.*(20\d\d年.*)$").unwrap();
@@ -171,25 +220,29 @@ pub fn parse_desc(input: &str) -> Result<Desc, ()> {
         panic!(input.to_string());
     }
     let cap = re.captures(input).unwrap();
-    // dbg!(&cap);
+    dbg!(&cap);
     if cap.len() == 17 {
-        // desc.page_start = cap.get(3).unwrap().as_str().parse::<u32>().unwrap();
-        desc.page_start = match cap.get(3) {
-            Some(i) => i.as_str().parse::<u32>().ok(),
-            None => None,
-        };
-        desc.page_end = match cap.get(5) {
-            Some(i) => i.as_str().parse::<u32>().ok(),
-            None => None,
-        };
-        desc.loc_start = match cap.get(7) {
-            Some(i) => i.as_str().parse::<u32>().ok(),
-            None => None,
-        };
-        desc.loc_end = match cap.get(8) {
-            Some(i) => i.as_str().parse::<u32>().ok(),
-            None => None,
-        };
+        macro_rules! cap_get_u32 {
+            ($idx:expr) => {
+                match cap.get($idx) {
+                    Some(i) => i.as_str().parse::<u32>().ok(),
+                    None => None,
+                }
+            };
+        }
+        desc.page_start = cap_get_u32!(3);
+        desc.page_end = cap_get_u32!(5);
+        desc.loc_start = cap_get_u32!(7);
+        desc.loc_end = cap_get_u32!(8);
+        desc.datetime.year = cap_get_u32!(12).unwrap();
+        desc.datetime.day = cap_get_u32!(11).unwrap();
+        // desc.datetime.month = cap_get_u32!(10).unwrap();
+        desc.datetime.weekday = Weekday::from_str(cap.get(9).map(|x| x.as_str()).unwrap_or(""));
+        desc.datetime.hour = cap_get_u32!(13).unwrap();
+        desc.datetime.minute = cap_get_u32!(14).unwrap();
+        desc.datetime.second = cap_get_u32!(15).unwrap();
+        // desc.datetime.am_or_pm = cap_get_u32!(16).unwrap();
+        desc.datetime.am_or_pm = AMorPM::from_str(cap.get(16).map(|x| x.as_str()).unwrap_or(""));
     } else {
         panic!(input.to_string());
     }
@@ -209,7 +262,7 @@ pub struct Desc {
     page_end: Option<u32>,
     loc_start: Option<u32>,
     loc_end: Option<u32>,
-    // timestamp: String
+    datetime: Datetime,
 }
 #[derive(Debug, Default, Clone)]
 pub struct Note {
@@ -246,7 +299,7 @@ fn parse_input(input: &str) {
     }
     let key_len = notes_map.keys().len();
     for (k, v) in notes_map {
-        // println!("{}: \n=> {:?}, {:?}", k, v.len(), v[0]);
+        println!("{}: \n=> {:?}, {:?}", k, v.len(), v[0]);
         // println!("{}: \n=> {:?}", k, v.len());
         // println!("=============");
         //
