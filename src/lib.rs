@@ -62,10 +62,54 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
         let en_case4 =
             "- Your Highlight on Location 294-296 | Added on Friday, February 21, 2020 9:06:35 AM";
 
+
+        use crate::AMorPM::*;
+        use crate::Weekday::*;
+        use crate::Month::*;
         let desc = parse_desc(en_case1);
-        dbg!(&desc);
-        // let desc = parse_desc(en_case2);
-        // dbg!(&desc);
+        assert_eq!(
+            desc,
+            Ok(Desc {
+                pos_start: 0,
+                pos_end: None,
+                page_start: Some(421,),
+                page_end: Some(421,),
+                loc_start: None,
+                loc_end: None,
+                datetime: Datetime {
+                    year: 2017,
+                    month: April,
+                    day: 13,
+                    weekday: Thu,
+                    am_or_pm: AM,
+                    hour: 11,
+                    minute: 51,
+                    second: 59,
+                },
+            })
+        );
+        let desc = parse_desc(en_case2);
+        assert_eq!(
+            desc,
+            Ok(Desc {
+                pos_start: 0,
+                pos_end: None,
+                page_start: None,
+                page_end: None,
+                loc_start: Some(181,),
+                loc_end: Some(184,),
+                datetime: Datetime {
+                    year: 2018,
+                    month: May,
+                    day: 12,
+                    weekday: Sat,
+                    am_or_pm: AM,
+                    hour: 11,
+                    minute: 41,
+                    second: 53,
+                },
+            },)
+        );
         // let desc = parse_desc(en_case3);
         // dbg!(&desc);
         // let desc = parse_desc(en_case4);
@@ -95,7 +139,7 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
 macro_rules! def_enum {
     ($name:ident,$default:ident, $($child:ident),*) => {
 
-            #[derive(Debug, Clone)]
+            #[derive(Debug, Clone,Eq, PartialEq)]
             pub enum $name {
                 $(
                  $child,
@@ -123,7 +167,7 @@ macro_rules! def_enum {
 macro_rules! def_enum1 {
     ($name:ident,$default:ident, $($prop: expr, $prop1: expr => $val: ident,)+) => {
 
-            #[derive(Debug, Clone)]
+            #[derive(Debug, Clone,Eq, PartialEq)]
             pub enum $name {
                 $($val),+
             }
@@ -163,10 +207,10 @@ def_enum!(
     November, December
 );
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub struct Datetime {
     year: u32,
-    month: u32,
+    month: Month,
     day: u32,
     weekday: Weekday,
     am_or_pm: AMorPM,
@@ -193,7 +237,7 @@ pub fn parse_date(input: &str) -> Result<Datetime, ()> {
         let mut datetime = Datetime::default();
         // datetime.year = caps.get(1).map(|x|x.as_str()).unwrap_or("").parse().unwrap_or_default();
         datetime.year = internal_parse(1) as _;
-        datetime.month = internal_parse(2) as _;
+        // datetime.month = internal_parse(2) as _;
         datetime.day = internal_parse(3) as _;
         // datetime.weekday = internal_parse_str(4) as _;
         // datetime.am_or_pm = internal_parse_str(5) as _;
@@ -220,7 +264,7 @@ pub fn parse_desc(input: &str) -> Result<Desc, ()> {
         panic!(input.to_string());
     }
     let cap = re.captures(input).unwrap();
-    dbg!(&cap);
+    // dbg!(&cap);
     if cap.len() == 17 {
         macro_rules! cap_get_u32 {
             ($idx:expr) => {
@@ -236,12 +280,11 @@ pub fn parse_desc(input: &str) -> Result<Desc, ()> {
         desc.loc_end = cap_get_u32!(8);
         desc.datetime.year = cap_get_u32!(12).unwrap();
         desc.datetime.day = cap_get_u32!(11).unwrap();
-        // desc.datetime.month = cap_get_u32!(10).unwrap();
+        desc.datetime.month = Month::from_str(cap.get(10).map(|x| x.as_str()).unwrap_or(""));
         desc.datetime.weekday = Weekday::from_str(cap.get(9).map(|x| x.as_str()).unwrap_or(""));
         desc.datetime.hour = cap_get_u32!(13).unwrap();
         desc.datetime.minute = cap_get_u32!(14).unwrap();
         desc.datetime.second = cap_get_u32!(15).unwrap();
-        // desc.datetime.am_or_pm = cap_get_u32!(16).unwrap();
         desc.datetime.am_or_pm = AMorPM::from_str(cap.get(16).map(|x| x.as_str()).unwrap_or(""));
     } else {
         panic!(input.to_string());
@@ -254,7 +297,7 @@ const SEP: &str = "==========\n";
 const NEWLINE: &str = "\n";
 const OPTION_META_DATA: bool = false;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct Desc {
     pos_start: u32,
     pos_end: Option<u32>,
