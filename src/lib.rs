@@ -153,6 +153,31 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
                 },
             })
         );
+        let desc = parse_desc_chinese(case1);
+        dbg!(&desc);
+
+        assert_eq!(
+            desc,
+            Ok(Desc {
+                pos_start: 0,
+                pos_end: None,
+                page_start: None,
+                page_end: None,
+                loc_start: Some(2484,),
+                loc_end: Some(2487,),
+                datetime: Datetime {
+                    year: 2021,
+                    month: April,
+                    day: 7,
+                    weekday: Wed,
+                    am_or_pm: PM,
+                    hour: 10,
+                    minute: 55,
+                    second: 58,
+                },
+            })
+        );
+        // let desc = parse_desc_chinese(case2);
     }
 
     #[ignore]
@@ -229,8 +254,10 @@ macro_rules! def_enum1 {
     }
 }
 
-def_enum!(AMorPM, AM, AM, PM);
-
+def_enum1!(AMorPM, AM,
+"AM", "上午" => AM,
+"PM", "下午" => PM,
+);
 // bad bad...
 def_enum1!(Weekday, Mon,
   "一", "Monday" => Mon,
@@ -241,10 +268,24 @@ def_enum1!(Weekday, Mon,
   "六", "Saturday" => Sat,
   "日", "Sunday" => Sun,
 );
-def_enum!(
-    Month, January, January, February, March, April, May, June, July, August, September, October,
-    November, December
+def_enum1!(Month, January,
+  "1", "January" => January,
+  "2", "February" => February,
+  "3", "March" => March,
+  "4", "April" => April,
+  "5", "May" => May,
+  "6", "June" => June,
+  "7", "July" => July,
+  "8", "August" => August,
+  "9", "September" => September,
+  "10", "October" => October,
+  "11", "November" => November,
+  "12", "December" => December,
 );
+// def_enum!(
+//     Month, January, January, February, March, April, May, June, July, August, September, October,
+//     November, December
+// );
 
 #[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub struct Datetime {
@@ -294,6 +335,39 @@ pub fn parse_date(input: &str) -> Result<Datetime, ()> {
 //     }
 // }
 
+pub fn parse_desc_chinese(input: &str) -> Result<Desc, ()> {
+    let re = Regex::new(r"(第 (\d*) 页.*)?位置 #(\d*)(-(\d*))?.*(\d{4})年(\d{1,2})月(\d{1,2})日星期(一|二|三|四|五|六|日) (上午|下午)(\d{1,2}):(\d{2}):(\d{2})").unwrap();
+    let mut desc = Desc::default();
+    if re.captures(input).is_none() {
+        panic!(input.to_string());
+    }
+    let cap = re.captures(input).unwrap();
+    if cap.len() == 14 {
+        macro_rules! cap_get_u32 {
+            ($idx:expr) => {
+                match cap.get($idx) {
+                    Some(i) => i.as_str().parse::<u32>().ok(),
+                    None => None,
+                }
+            };
+        }
+        desc.page_start = cap_get_u32!(2);
+        // desc.page_end = cap_get_u32!(5);
+        desc.loc_start = cap_get_u32!(3);
+        desc.loc_end = cap_get_u32!(5);
+        desc.datetime.year = cap_get_u32!(6).unwrap();
+        desc.datetime.day = cap_get_u32!(8).unwrap();
+        desc.datetime.month = Month::from_str(cap.get(7).map(|x| x.as_str()).unwrap_or(""));
+        desc.datetime.weekday = Weekday::from_str(cap.get(9).map(|x| x.as_str()).unwrap_or(""));
+        desc.datetime.hour = cap_get_u32!(11).unwrap();
+        desc.datetime.minute = cap_get_u32!(12).unwrap();
+        desc.datetime.second = cap_get_u32!(13).unwrap();
+        desc.datetime.am_or_pm = AMorPM::from_str(cap.get(10).map(|x| x.as_str()).unwrap_or(""));
+    } else {
+        panic!(input.to_string());
+    }
+    Ok(desc)
+}
 pub fn parse_desc(input: &str) -> Result<Desc, ()> {
     // let re = Regex::new(r"#(\d*)(-(\d*))?.*(20\d\d年.*)$").unwrap();
     // let re = Regex::new(r"Location (\d*)-(\d*) \| Added on (\w*), (\w*) (\d*), (\d*) (\d{2}):(\d{2}):(\d{2}) (AM|PM)").unwrap();
