@@ -62,10 +62,9 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
         let en_case4 =
             "- Your Highlight on Location 294-296 | Added on Friday, February 21, 2020 9:06:35 AM";
 
-
         use crate::AMorPM::*;
-        use crate::Weekday::*;
         use crate::Month::*;
+        use crate::Weekday::*;
         let desc = parse_desc(en_case1);
         assert_eq!(
             desc,
@@ -110,10 +109,50 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
                 },
             },)
         );
-        // let desc = parse_desc(en_case3);
-        // dbg!(&desc);
-        // let desc = parse_desc(en_case4);
-        // dbg!(&desc);
+        let desc = parse_desc(en_case3);
+        assert_eq!(
+            desc,
+            Ok(Desc {
+                pos_start: 0,
+                pos_end: None,
+                page_start: Some(121,),
+                page_end: None,
+                loc_start: Some(1607,),
+                loc_end: Some(1608,),
+                datetime: Datetime {
+                    year: 2016,
+                    month: August,
+                    day: 31,
+                    weekday: Wed,
+                    am_or_pm: AM,
+                    hour: 9,
+                    minute: 39,
+                    second: 11,
+                },
+            },),
+        );
+        let desc = parse_desc(en_case4);
+        assert_eq!(
+            desc,
+            Ok(Desc {
+                pos_start: 0,
+                pos_end: None,
+                page_start: None,
+                page_end: None,
+                loc_start: Some(294,),
+                loc_end: Some(296,),
+                datetime: Datetime {
+                    year: 2020,
+                    month: February,
+                    day: 21,
+                    weekday: Fri,
+                    am_or_pm: AM,
+                    hour: 9,
+                    minute: 6,
+                    second: 35,
+                },
+            })
+        );
     }
 
     #[ignore]
