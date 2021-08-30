@@ -51,28 +51,19 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
     // #[ignore]
     #[test]
     fn test_parse_desc() {
-        let case1 = "- 您在位置 #2484-2487的标注 | 添加于 2021年4月7日星期三 下午10:55:58";
-        let case2 = "- 您在第 47 页（位置 #708-710）的标注 | 添加于 2021年3月5日星期五 上午1:26:56";
-        let case3 = "- 您在位置 #205 的笔记 | 添加于 2019年8月31日星期六 上午12:55:51";
-
-        let en_case1 =
-            "- Your Highlight on page 421-421 | Added on Thursday, April 13, 2017 11:51:59 AM";
-        let en_case2 = "- Your Highlight on page xv | Location 181-184 | Added on Saturday, May 12, 2018 11:41:53 AM";
-        let en_case3 = "- Your Highlight on page 121 | Location 1607-1608 | Added on Wednesday, August 31, 2016 9:39:11 AM";
-        let en_case4 =
-            "- Your Highlight on Location 294-296 | Added on Friday, February 21, 2020 9:06:35 AM";
-
         use crate::AMorPM::*;
         use crate::Month::*;
         use crate::Weekday::*;
+        let en_case1 =
+            "- Your Highlight on page 421-421 | Added on Thursday, April 13, 2017 11:51:59 AM";
         let desc = parse_desc(en_case1);
         assert_eq!(
             desc,
             Ok(Desc {
                 pos_start: 0,
                 pos_end: None,
-                page_start: Some(421,),
-                page_end: Some(421,),
+                page_start: Some(421),
+                page_end: Some(421),
                 loc_start: None,
                 loc_end: None,
                 datetime: Datetime {
@@ -87,6 +78,8 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
                 },
             })
         );
+
+        let en_case2 = "- Your Highlight on page xv | Location 181-184 | Added on Saturday, May 12, 2018 11:41:53 AM";
         let desc = parse_desc(en_case2);
         assert_eq!(
             desc,
@@ -95,8 +88,8 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
                 pos_end: None,
                 page_start: None,
                 page_end: None,
-                loc_start: Some(181,),
-                loc_end: Some(184,),
+                loc_start: Some(181),
+                loc_end: Some(184),
                 datetime: Datetime {
                     year: 2018,
                     month: May,
@@ -109,16 +102,18 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
                 },
             },)
         );
+
+        let en_case3 = "- Your Highlight on page 121 | Location 1607-1608 | Added on Wednesday, August 31, 2016 9:39:11 AM";
         let desc = parse_desc(en_case3);
         assert_eq!(
             desc,
             Ok(Desc {
                 pos_start: 0,
                 pos_end: None,
-                page_start: Some(121,),
+                page_start: Some(121),
                 page_end: None,
-                loc_start: Some(1607,),
-                loc_end: Some(1608,),
+                loc_start: Some(1607),
+                loc_end: Some(1608),
                 datetime: Datetime {
                     year: 2016,
                     month: August,
@@ -131,6 +126,9 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
                 },
             },),
         );
+
+        let en_case4 =
+            "- Your Highlight on Location 294-296 | Added on Friday, February 21, 2020 9:06:35 AM";
         let desc = parse_desc(en_case4);
         assert_eq!(
             desc,
@@ -139,8 +137,8 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
                 pos_end: None,
                 page_start: None,
                 page_end: None,
-                loc_start: Some(294,),
-                loc_end: Some(296,),
+                loc_start: Some(294),
+                loc_end: Some(296),
                 datetime: Datetime {
                     year: 2020,
                     month: February,
@@ -153,8 +151,9 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
                 },
             })
         );
+
+        let case1 = "- 您在位置 #2484-2487的标注 | 添加于 2021年4月7日星期三 下午10:55:58";
         let desc = parse_desc_chinese(case1);
-        dbg!(&desc);
 
         assert_eq!(
             desc,
@@ -163,8 +162,8 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
                 pos_end: None,
                 page_start: None,
                 page_end: None,
-                loc_start: Some(2484,),
-                loc_end: Some(2487,),
+                loc_start: Some(2484),
+                loc_end: Some(2487),
                 datetime: Datetime {
                     year: 2021,
                     month: April,
@@ -177,7 +176,57 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
                 },
             })
         );
-        // let desc = parse_desc_chinese(case2);
+
+        let case2 = "- 您在第 47 页（位置 #708-710）的标注 | 添加于 2021年3月5日星期五 上午1:26:56";
+        let desc = parse_desc_chinese(case2);
+
+        assert_eq!(
+            desc,
+            Ok(Desc {
+                pos_start: 0,
+                pos_end: None,
+                page_start: Some(47),
+                page_end: None,
+                loc_start: Some(708),
+                loc_end: Some(710),
+                datetime: Datetime {
+                    year: 2021,
+                    month: March,
+                    day: 5,
+                    weekday: Fri,
+                    am_or_pm: AM,
+                    hour: 1,
+                    minute: 26,
+                    second: 56,
+                },
+            },)
+        );
+
+        let case3 = "- 您在位置 #205 的笔记 | 添加于 2019年8月31日星期六 上午12:55:51";
+
+        let desc = parse_desc_chinese(case3);
+
+        assert_eq!(
+            desc,
+            Ok(Desc {
+                pos_start: 0,
+                pos_end: None,
+                page_start: None,
+                page_end: None,
+                loc_start: Some(205),
+                loc_end: None,
+                datetime: Datetime {
+                    year: 2019,
+                    month: August,
+                    day: 31,
+                    weekday: Sat,
+                    am_or_pm: AM,
+                    hour: 12,
+                    minute: 55,
+                    second: 51,
+                },
+            })
+        );
     }
 
     #[ignore]
