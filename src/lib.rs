@@ -200,7 +200,32 @@ Ideologies are substitutes for true knowledge, and ideologues are always dangero
         Weekday::from_str("x");
     }
 }
+
 macro_rules! def_enum {
+    ($name:ident,$default:ident, $($prop: expr, $prop1: expr => $val: ident,)+) => {
+
+            #[derive(Debug, Clone,Eq, PartialEq)]
+            pub enum $name {
+                $($val),+
+            }
+
+            impl Default for $name {
+                fn default() -> Self {
+                    $name::$default
+                }
+            }
+            impl $name {
+                pub fn from_str(input: &str) -> Self {
+                    match input {
+
+                        $($prop | $prop1 => $name::$val,)+
+
+                        _ => unimplemented!(),
+                    }
+                }
+            }
+    };
+
     ($name:ident,$default:ident, $($child:ident),*) => {
 
             #[derive(Debug, Clone,Eq, PartialEq)]
@@ -225,41 +250,15 @@ macro_rules! def_enum {
                     }
                 }
             }
-    }
+    };
 }
 
-macro_rules! def_enum1 {
-    ($name:ident,$default:ident, $($prop: expr, $prop1: expr => $val: ident,)+) => {
-
-            #[derive(Debug, Clone,Eq, PartialEq)]
-            pub enum $name {
-                $($val),+
-            }
-
-            impl Default for $name {
-                fn default() -> Self {
-                    $name::$default
-                }
-            }
-            impl $name {
-                pub fn from_str(input: &str) -> Self {
-                    match input {
-
-                        $($prop | $prop1 => $name::$val,)+
-
-                        _ => unimplemented!(),
-                    }
-                }
-            }
-    }
-}
-
-def_enum1!(AMorPM, AM,
+def_enum!(AMorPM, AM,
 "AM", "上午" => AM,
 "PM", "下午" => PM,
 );
 // bad bad...
-def_enum1!(Weekday, Mon,
+def_enum!(Weekday, Mon,
   "一", "Monday" => Mon,
   "二", "Tuesday" => Tue,
   "三", "Wednesday" => Wed,
@@ -268,7 +267,7 @@ def_enum1!(Weekday, Mon,
   "六", "Saturday" => Sat,
   "日", "Sunday" => Sun,
 );
-def_enum1!(Month, January,
+def_enum!(Month, January,
   "1", "January" => January,
   "2", "February" => February,
   "3", "March" => March,
